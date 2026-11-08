@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#131316" />
+    <meta name="description" content="Wizard's Chess — a playable 3D chess duel of marble and obsidian inside a Gothic cathedral." />
+    <title>Wizard's Chess</title>
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%23e7c26c' d='M12 2a3 3 0 0 0-1.9 5.32C8.77 8.04 8 9.4 8 11h8c0-1.6-.77-2.96-2.1-3.68A3 3 0 0 0 12 2zM9.6 12l-1.1 6h7l-1.1-6H9.6zM6 19v3h12v-3H6z'/%3E%3C/svg%3E" />
+  </head>
+  <body>
+    <div id="app">
+      <div id="scene"></div>
+      <div class="vignette" aria-hidden="true"></div>
+
+      <!-- Single-level navigation: one rail (bottom bar on phones), four destinations. -->
+      <nav class="nav" aria-label="Main">
+        <div class="nav__brand" aria-hidden="true"></div>
+        <button class="nav__item" data-dest="play" aria-controls="sheet"><span class="nav__indicator"></span><span class="nav__label">Play</span></button>
+        <button class="nav__item" data-dest="moves" aria-controls="sheet"><span class="nav__indicator"></span><span class="nav__label">Moves</span></button>
+        <button class="nav__item" data-dest="settings" aria-controls="sheet"><span class="nav__indicator"></span><span class="nav__label">Settings</span></button>
+        <button class="nav__item" data-dest="rules" aria-controls="sheet"><span class="nav__indicator"></span><span class="nav__label">Rules</span></button>
+      </nav>
+
+      <aside id="sheet" class="sheet" aria-hidden="true">
+        <header class="sheet__header">
+          <h2 class="sheet__title" id="sheet-title">Play</h2>
+          <button class="icon-btn" id="sheet-close" aria-label="Close panel"></button>
+        </header>
+
+        <section class="sheet__section" data-section="play">
+          <div class="field">
+            <span class="field__label">Opponent</span>
+            <div class="segmented" id="mode" role="radiogroup" aria-label="Opponent">
+              <button role="radio" data-value="ai">Wizard AI</button>
+              <button role="radio" data-value="local">Two players</button>
+            </div>
+          </div>
+          <div class="field" data-ai-only>
+            <span class="field__label">You command</span>
+            <div class="segmented" id="side" role="radiogroup" aria-label="Your side">
+              <button role="radio" data-value="w">Marble</button>
+              <button role="radio" data-value="b">Obsidian</button>
+            </div>
+          </div>
+          <div class="field" data-ai-only>
+            <span class="field__label">Wizard strength</span>
+            <div class="segmented" id="difficulty" role="radiogroup" aria-label="Difficulty">
+              <button role="radio" data-value="novice">Novice</button>
+              <button role="radio" data-value="adept">Adept</button>
+              <button role="radio" data-value="archmage">Archmage</button>
+            </div>
+          </div>
+          <div class="actions">
+            <button class="btn btn--filled" id="new-game"></button>
+            <button class="btn btn--tonal" id="undo"></button>
+            <button class="btn btn--outlined" id="resign"></button>
+          </div>
+          <div class="card captured">
+            <div class="captured__row"><span class="captured__who">Marble took</span><span class="captured__list" id="cap-w"></span><span class="captured__adv" id="adv-w"></span></div>
+            <div class="captured__row"><span class="captured__who">Obsidian took</span><span class="captured__list" id="cap-b"></span><span class="captured__adv" id="adv-b"></span></div>
+          </div>
+        </section>
+
+        <section class="sheet__section" data-section="moves">
+          <ol class="movelist" id="movelist"></ol>
+          <p class="empty" id="moves-empty">No moves yet. Marble opens.</p>
+        </section>
+
+        <section class="sheet__section" data-section="settings">
+          <label class="switch-row"><span>Sound</span><input type="checkbox" class="switch" id="opt-sound" checked /></label>
+          <label class="switch-row"><span>Show legal moves</span><input type="checkbox" class="switch" id="opt-hints" checked /></label>
+          <label class="switch-row"><span>Turn camera each move <small>Two-player mode</small></span><input type="checkbox" class="switch" id="opt-autoflip" /></label>
+          <label class="switch-row"><span>Glow (bloom)</span><input type="checkbox" class="switch" id="opt-bloom" checked /></label>
+          <label class="switch-row"><span>Shadows</span><input type="checkbox" class="switch" id="opt-shadows" checked /></label>
+          <div class="field">
+            <span class="field__label">Animation speed <output id="speed-out">1.0×</output></span>
+            <input type="range" class="slider" id="opt-speed" min="0.5" max="2.5" step="0.1" value="1" />
+          </div>
+        </section>
+
+        <section class="sheet__section prose" data-section="rules">
+          <p>Click a piece to select it; glowing dots mark legal squares and red rings mark captures. Drag to orbit the cathedral, scroll or pinch to zoom.</p>
+          <h3>Rules of the duel</h3>
+          <ul>
+            <li>Standard FIDE movement for all six pieces.</li>
+            <li><b>Castling</b> — move the king two squares toward a rook. Allowed only if neither has moved, the path is clear and the king does not start in, pass through or land in check.</li>
+            <li><b>En passant</b> — capture a pawn that just advanced two squares past yours.</li>
+            <li><b>Promotion</b> — a pawn reaching the last rank becomes a queen, rook, bishop or knight.</li>
+            <li><b>Checkmate</b> wins. Stalemate, threefold repetition, the fifty-move rule and insufficient material are draws.</li>
+          </ul>
+          <h3>Keyboard</h3>
+          <ul>
+            <li><kbd>Ctrl</kbd>+<kbd>Z</kbd> undo · <kbd>N</kbd> new game · <kbd>F</kbd> flip view · <kbd>Esc</kbd> deselect / close</li>
+          </ul>
+        </section>
+      </aside>
+
+      <header class="status" aria-live="polite">
+        <div class="status__players">
+          <span class="player player--w" id="player-w"><span class="player__dot"></span>Marble</span>
+          <span class="player player--b" id="player-b"><span class="player__dot"></span>Obsidian</span>
+        </div>
+        <div class="status__text" id="status-text">Summoning the cathedral…</div>
+        <div class="progress" id="thinking" hidden><span></span></div>
+      </header>
+
+      <div class="quick">
+        <button class="icon-btn icon-btn--tonal" id="q-undo" aria-label="Undo move" title="Undo (Ctrl+Z)"></button>
+        <button class="icon-btn icon-btn--tonal" id="q-flip" aria-label="Flip view" title="Flip view (F)"></button>
+        <button class="icon-btn icon-btn--tonal" id="q-center" aria-label="Reset camera" title="Reset camera"></button>
+      </div>
+
+      <div class="snackbar" id="snackbar" role="status"></div>
+
+      <dialog class="dialog" id="promo-dialog" aria-labelledby="promo-title">
+        <h2 class="dialog__title" id="promo-title">Promote pawn</h2>
+        <p class="dialog__body">Choose what your pawn ascends to.</p>
+        <div class="promo" id="promo-options"></div>
+      </dialog>
+
+      <dialog class="dialog" id="over-dialog" aria-labelledby="over-title">
+        <div class="dialog__icon" id="over-icon"></div>
+        <h2 class="dialog__title" id="over-title">Checkmate</h2>
+        <p class="dialog__body" id="over-body"></p>
+        <div class="dialog__actions">
+          <button class="btn btn--text" id="over-review">View board</button>
+          <button class="btn btn--filled" id="over-new">New game</button>
+        </div>
+      </dialog>
+
+      <div class="loader" id="loader">
+        <div class="loader__ring"></div>
+        <p>Summoning the cathedral…</p>
+      </div>
+    </div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
