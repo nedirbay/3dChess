@@ -4,6 +4,8 @@ A playable 3D wizard's chess duel set inside a dark Gothic cathedral. Marble and
 obsidian pieces breathe, march, strike and shatter. The game follows the full
 FIDE rules and has a minimalist Material Design 3 interface.
 
+![Wizard's Chess in the cathedral](docs/screenshot.png)
+
 ## Features
 
 - **Full chess rules**: legal move generation, check, checkmate, stalemate,
