@@ -623,6 +623,7 @@ kbd {
   gap: 8px;
 }
 .player {
+  white-space: nowrap;
   display: inline-flex;
   align-items: center;
   gap: 8px;

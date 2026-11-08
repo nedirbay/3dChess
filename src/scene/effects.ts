@@ -54,6 +54,8 @@ export class Effects {
   private glow = glowTexture();
   private lightPool: THREE.PointLight[] = [];
   private ringGeo = new THREE.RingGeometry(0.8, 1, 64);
+  /** Shard materials are shared per shatter; dispose once no shard uses them. */
+  private matRefs = new Map<THREE.Material, number>();
 
   constructor(
     private scene: THREE.Scene,
@@ -169,6 +171,7 @@ export class Effects {
         g.setAttribute('normal', new THREE.Float32BufferAttribute(nor, 3));
         const fm = fadeMat(mat);
         mats.push(fm);
+        this.matRefs.set(fm, (this.matRefs.get(fm) ?? 0) + 1);
         const mesh = new THREE.Mesh(g, fm);
         mesh.castShadow = true;
         shardGroup.add(mesh);
@@ -334,13 +337,10 @@ export class Effects {
         o.scale.setScalar(Math.max(0.01, 0.4 + 0.6 * k));
       }
       if (s.age >= s.life) {
-        this.scene.remove(o);
-        o.traverse((c) => (c as THREE.Mesh).geometry?.dispose());
+        this.removeShard(s);
         this.shards.splice(i, 1);
       }
     }
-    // Materials shared between shards of one shatter: dispose when no shard uses them.
-    // (Cheap enough to let GC handle; fade materials are small.)
 
     for (let i = this.particles.length - 1; i >= 0; i--) {
       const p = this.particles[i];
@@ -383,10 +383,28 @@ export class Effects {
     }
   }
 
+  private removeShard(s: Shard): void {
+    this.scene.remove(s.obj);
+    s.obj.traverse((c) => (c as THREE.Mesh).geometry?.dispose());
+    for (const m of s.materials) {
+      const n = (this.matRefs.get(m) ?? 1) - 1;
+      if (n <= 0) {
+        this.matRefs.delete(m);
+        m.dispose();
+      } else this.matRefs.set(m, n);
+    }
+  }
+
   clear(): void {
-    for (const s of this.shards) this.scene.remove(s.obj);
-    for (const p of this.particles) this.scene.remove(p.sprite);
-    for (const r of this.rings) this.scene.remove(r.mesh);
+    for (const s of this.shards) this.removeShard(s);
+    for (const p of this.particles) {
+      this.scene.remove(p.sprite);
+      p.sprite.material.dispose();
+    }
+    for (const r of this.rings) {
+      this.scene.remove(r.mesh);
+      (r.mesh.material as THREE.Material).dispose();
+    }
     for (const f of this.flashes) f.light.intensity = 0;
     this.shards = [];
     this.particles = [];

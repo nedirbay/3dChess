@@ -376,7 +376,7 @@ export class Game {
     const turn = this.chess.turn;
     this.ui.setTurn(this.over ? null : turn);
     this.ui.setHistory(this.chess.history);
-    this.board.setCheck(status.check && !this.over ? this.chess.kings[turn] : -1);
+    this.board.setCheck(status.check ? this.chess.kings[turn] : -1);
     const last = this.chess.history.at(-1);
     this.board.setLastMove(last ? [last.from, last.to] : null);
     this.ui.setUndoEnabled(this.chess.history.length > 0 && !this.busy);
@@ -503,8 +503,10 @@ export class Game {
       this.ui.snackbar('Nothing to undo');
       return;
     }
-    const wasResigned = this.over && this.resigning !== null;
-    if (wasResigned) return;
+    if (this.over && this.resigning !== null) {
+      this.ui.snackbar('The game was resigned. Start a new game to play again.');
+      return;
+    }
     this.cancelAi();
     this.deselect();
     this.chess.undo();

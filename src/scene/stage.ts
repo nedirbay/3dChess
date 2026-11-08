@@ -53,7 +53,7 @@ export class Stage {
 
     // Lighting: dim ambient, a warm key spot over the board, cold moonlight
     // from the rose window and a faint rim.
-    this.scene.add(new THREE.HemisphereLight(0x3a3f66, 0x0a0806, 0.55));
+    this.scene.add(new THREE.HemisphereLight(0x343848, 0x0a0806, 0.5));
 
     this.keyLight = new THREE.SpotLight(0xffe2b8, 260, 40, 0.48, 0.7, 1.6);
     this.keyLight.position.set(2, 15, 4);
@@ -81,7 +81,7 @@ export class Stage {
     moon.shadow.normalBias = 0.03;
     this.scene.add(moon);
 
-    const rim = new THREE.DirectionalLight(0xb38cff, 0.35);
+    const rim = new THREE.DirectionalLight(0xb9a6e6, 0.25);
     rim.position.set(6, 6, 18);
     this.scene.add(rim);
 
@@ -134,13 +134,18 @@ export class Stage {
     const w = this.container.clientWidth || window.innerWidth;
     const h = this.container.clientHeight || window.innerHeight;
     this.camera.aspect = w / h;
-    // Pull the camera back on tall/narrow screens so the board stays framed.
-    this.camera.fov = w / h < 0.8 ? 58 : w / h < 1.2 ? 48 : 40;
+    this.updateFov(w, h);
     if (this.inset) this.camera.setViewOffset(w, h, -this.inset / 2, 0, w, h);
     this.camera.updateProjectionMatrix();
     this.renderer.setSize(w, h);
     this.composer.setSize(w, h);
     this.bloom.resolution.set(w / 2, h / 2);
+  }
+
+  /** Widens the field of view when the visible area is narrow so the board stays framed. */
+  private updateFov(w: number, h: number): void {
+    const visibleAspect = Math.max(0.3, (w - this.inset) / h);
+    this.camera.fov = THREE.MathUtils.clamp(40 * Math.pow(1.45 / visibleAspect, 0.6), 38, 64);
   }
 
   /** Shifts the rendered image so the board centres in the uncovered area. */
@@ -149,13 +154,15 @@ export class Stage {
   }
 
   private applyInset(dt: number): void {
-    if (Math.abs(this.inset - this.insetTarget) < 0.5 && this.inset === this.insetTarget) return;
+    if (this.inset === this.insetTarget) return;
     this.inset += (this.insetTarget - this.inset) * (1 - Math.exp(-dt * 12));
     if (Math.abs(this.inset - this.insetTarget) < 0.5) this.inset = this.insetTarget;
     const w = this.container.clientWidth || window.innerWidth;
     const h = this.container.clientHeight || window.innerHeight;
+    this.updateFov(w, h);
     if (this.inset === 0) this.camera.clearViewOffset();
     else this.camera.setViewOffset(w, h, -this.inset / 2, 0, w, h);
+    this.camera.updateProjectionMatrix();
   }
 
   setShadows(on: boolean): void {
@@ -171,7 +178,7 @@ export class Stage {
   viewFrom(side: 'w' | 'b', duration = 1.4, distance?: number): Promise<void> {
     const dir = side === 'w' ? 1 : -1;
     const aspect = this.camera.aspect;
-    const d = distance ?? (aspect < 0.8 ? 15 : 12.5);
+    const d = distance ?? (aspect < 0.8 ? 14 : 13);
     const to = new THREE.Vector3(0, d * 0.72, d * 0.7 * dir);
     return this.flyTo(to, new THREE.Vector3(0, 0, 0.4 * dir), duration);
   }
@@ -214,7 +221,7 @@ export class Stage {
     this.camera.position.set(0, FLOOR_Y + 5, 27 * dir);
     this.controls.target.set(0, 2, 0);
     this.camera.lookAt(this.controls.target);
-    const d = this.camera.aspect < 0.8 ? 15 : 12.5;
+    const d = this.camera.aspect < 0.8 ? 14 : 13;
     const fromPos = this.camera.position.clone();
     const toPos = new THREE.Vector3(0, d * 0.72, d * 0.7 * dir);
     const fromT = this.controls.target.clone();

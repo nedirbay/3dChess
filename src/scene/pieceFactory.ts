@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
+import { mergeGeometries, mergeVertices } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import type { Color, PieceType } from '../chess/engine';
 import { stoneTexture } from './textures';
 
@@ -158,11 +158,27 @@ function knightHead(): THREE.BufferGeometry {
     curveSegments: 4,
   });
   g.translate(0, 0, -depth / 2);
+  // Sculpt: taper toward the muzzle and the crest, swell the cheeks and the
+  // chest so the head reads as a rounded form rather than a flat cut-out.
+  const pos = g.attributes.position;
+  for (let i = 0; i < pos.count; i++) {
+    const x = pos.getX(i);
+    const y = pos.getY(i);
+    const z = pos.getZ(i);
+    const muzzle = THREE.MathUtils.smoothstep(x, 0.05, 0.36);
+    const crest = THREE.MathUtils.smoothstep(y, 0.55, 0.78);
+    const cheek = Math.exp(-((x - 0.08) ** 2 + (y - 0.46) ** 2) / 0.02) * 0.35;
+    const chest = Math.exp(-((x - 0.05) ** 2 + (y - 0.08) ** 2) / 0.03) * 0.25;
+    const k = (1 - 0.45 * muzzle - 0.35 * crest + cheek + chest);
+    pos.setZ(i, z * k);
+  }
+  g.deleteAttribute('normal');
   // Face -z (forward) instead of +x.
   g.rotateY(Math.PI / 2);
   g.translate(0, 0.2, 0);
-  g.computeVertexNormals();
-  return g;
+  const merged = mergeVertices(g, 1e-4);
+  merged.computeVertexNormals();
+  return merged;
 }
 
 interface PieceGeometry {
@@ -225,6 +241,12 @@ function buildGeometry(type: PieceType): PieceGeometry {
     }
     case 'n': {
       parts.push(knightHead());
+      for (const side of [-1, 1]) {
+        const ear = new THREE.ConeGeometry(0.035, 0.12, 8);
+        ear.rotateX(0.25);
+        ear.translate(side * 0.045, 0.95, 0.0);
+        parts.push(ear);
+      }
       for (const side of [-1, 1]) {
         const eye = new THREE.SphereGeometry(0.026, 10, 8);
         eye.translate(side * 0.125, 0.67, -0.12);
